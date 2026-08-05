@@ -20,7 +20,7 @@ print("=======================================================\n")
 # ==========================================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Point these to  exact CSV files
+# Point these to exact dataset  CSV files
 DATASET_A_PATH = os.path.join(BASE_DIR, "CICIoT2023", "CICIOT23", "train", "train.csv")
 DATASET_B_PATH = os.path.join(BASE_DIR, "IoTID20", "IoT Network Intrusion Dataset.csv")
 

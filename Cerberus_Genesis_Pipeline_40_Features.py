@@ -20,7 +20,7 @@ print("=======================================================\n")
 # ==========================================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Point these to your exact CSV files
+# Point these to  exact CSV files
 DATASET_A_PATH = os.path.join(BASE_DIR, "CICIoT2023", "CICIOT23", "train", "train.csv")
 DATASET_B_PATH = os.path.join(BASE_DIR, "IoTID20", "IoT Network Intrusion Dataset.csv")
 
@@ -50,7 +50,7 @@ def extract_extreme_physics_schema(df, dataset_type):
         df_clean['fwd_rate'] = df.get('Srate', 0)
         df_clean['bwd_rate'] = df.get('Drate', 0)
         df_clean['fwd_pkts_tot'] = df.get('Number', 0) 
-        df_clean['bwd_pkts_tot'] = 0 # Derived if missing to maintain matrix shape
+        df_clean['bwd_pkts_tot'] = 0 
         df_clean['fwd_header_len'] = df.get('Header_Length', 0) / 2
         df_clean['bwd_header_len'] = df.get('Header_Length', 0) / 2
         
@@ -61,8 +61,7 @@ def extract_extreme_physics_schema(df, dataset_type):
         df_clean['fin_flag'] = df.get('fin_flag_number', 0)
         df_clean['psh_flag'] = df.get('psh_flag_number', 0)
         df_clean['urg_flag'] = df.get('urg_flag_number', 0)
-        df_clean['cwe_flag'] = df.get('cwr_flag_number', 0)  # FIXED: real column is 'cwr_flag_number' (CWR, not CWE) -- was a dead feature (always 0)
-        df_clean['ece_flag'] = df.get('ece_flag_number', 0)
+        df_clean['cwe_flag'] = df.get('cwr_flag_number', 0) 
         
         # 4. Active / Idle Beaconing
         df_clean['active_mean'] = df.get('Active_Mean', 0)
@@ -75,7 +74,7 @@ def extract_extreme_physics_schema(df, dataset_type):
         df_clean['is_udp'] = df.get('UDP', 0)
         df_clean['is_icmp'] = df.get('ICMP', 0)
         df_clean['is_arp'] = df.get('ARP', 0)
-        df_clean['is_ipv4'] = df.get('IPv', 1)  # FIXED: real column is 'IPv', not 'IPv4' -- was always silently defaulting
+        df_clean['is_ipv4'] = df.get('IPv', 1) 
         
         # 6. Expanded Application Layer (L7) Port Mapping
         df_clean['is_http'] = df.get('HTTP', 0)
@@ -148,19 +147,7 @@ def extract_extreme_physics_schema(df, dataset_type):
 
 def map_universal_threats(lbl_value):
     lbl = str(lbl_value).strip().lower()
-    # FIXED: CICIoT2023's actual benign label is "BenignTraffic" (one word),
-    # which lowercases to 'benigntraffic' -- NOT 'benign'. This is an exact
-    # -match check, not substring, so every single CICIoT2023 benign row was
-    # falling through all three branches and getting mapped to -1 (dropped
-    # as "unmapped"). That silently wiped out class 0 for the entire CIC
-    # portion of the dataset -- this is the root cause of "CICIoT2023 rows
-    # not extracted."
     if lbl in ['benigntraffic', '0', 'benign', 'normal']: return 0
-    # FIXED: check DoS/volumetric keywords BEFORE mitm/spoof/dns keywords.
-    # Some volumetric attack labels can contain a mitm-ish substring (e.g.
-    # "dns" appearing inside a flood-style name); since this is an elif
-    # chain, whichever branch runs first wins. Checking mitm first was
-    # silently reclassifying some DoS traffic as MitM.
     elif any(kw in lbl for kw in ['dos', 'ddos', 'flood', 'syn', 'mirai']): return 2
     elif any(kw in lbl for kw in ['mitm', 'arp', 'spoof', 'dns']): return 1
     return -1
@@ -244,14 +231,7 @@ df_combined = df_combined.drop_duplicates()
 feature_cols = [c for c in df_combined.columns if c != 'target_label']
 pre_purge_count = len(df_combined)
 
-# ADDED: only purge rows whose feature vector maps to MORE THAN ONE class
-# (genuine label conflicts / cross-dataset ambiguity) -- that's the only
-# case where a row is actually poisoning the model. A plain drop_duplicates
-# without this check (as this script had) either does too little (leaves
-# real conflicts in) or, if changed carelessly to keep=False, wipes out
-# huge numbers of legitimately repeated, correctly-labeled samples. This
-# targeted version does neither.
-conflict_counts = df_combined.groupby(feature_cols)['target_label'].transform('nunique')
+pby(feature_cols)['target_label'].transform('nunique')
 df_combined = df_combined[conflict_counts == 1]
 df_combined = df_combined.drop_duplicates(subset=feature_cols, keep='first')
 

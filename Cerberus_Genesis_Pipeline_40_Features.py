@@ -159,8 +159,7 @@ def apply_local_baseline(df):
     This matters specifically because CICIoT2023 and IoTID20 measure the
     same physical quantities (duration, packet size, etc.) in different
     absolute ranges/units -- without this, a single set of tree splits
-    can't cleanly separate patterns across both sources at once. This was
-    present in the validated canonical pipeline (96%+) but missing here.
+    can't cleanly separate patterns across both sources at once.
     """
     scaler = StandardScaler()
     binary_cols = ['is_tcp', 'is_udp', 'is_icmp', 'is_arp', 'is_ipv4',
